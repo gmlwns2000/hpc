@@ -1,0 +1,11 @@
+third_party/
+*.pyc
+__pycache__
+cache/
+saves/
+bin/
+obj/
+tmp/
+dummy*.png
+output*.txt
+
