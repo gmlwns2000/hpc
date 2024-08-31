@@ -76,7 +76,7 @@ def conv_flops(working_set):
     return (N * H * W) * (2 * KIN * KH * KW - 1) * KOUT
 
 def test(name, init_working_set_fn, worker_fn, flops_fn):
-    n_steps = 5
+    n_steps = 50
     
     working_set = init_working_set_fn()
     synchronize()
