@@ -75,7 +75,7 @@ def test(name, init_working_set_fn, worker_fn, flops_fn):
     n_steps = 100
     
     working_set = init_working_set_fn()
-    hpu.synchronize()
+    synchronize()
 
     t = time.time()
     for i in tqdm.tqdm(range(n_steps), dynamic_ncols=True, leave=False, desc=name):
