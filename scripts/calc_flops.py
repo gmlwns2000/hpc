@@ -39,11 +39,11 @@ def mark_step():
 
 def linear_working_set():
     # batch size 8, 128k Llama 3.1 8b Sequence
-    x = torch.randn((1 * 131071, 4096), device=device, dtype=dtype)
-    w1 = torch.randn((4096, 4096 * 4), device=device, dtype=dtype)
-    w2 = torch.randn((4096 * 4, 4096), device=device, dtype=dtype)
-    out1 = torch.zeros((x.shape[0], w1.shape[1]), device=device, dtype=dtype)
-    out2 = torch.zeros((x.shape[0], w2.shape[1]), device=device, dtype=dtype)
+    x = torch.randn((1 * 131071, 4096), device=device, dtype=torch.float32).to(dtype)
+    w1 = torch.randn((4096, 4096 * 4), device=device, dtype=torch.float32).to(dtype)
+    w2 = torch.randn((4096 * 4, 4096), device=device, dtype=torch.float32).to(dtype)
+    out1 = torch.zeros((x.shape[0], w1.shape[1]), device=device, dtype=torch.float32).to(dtype)
+    out2 = torch.zeros((x.shape[0], w2.shape[1]), device=device, dtype=torch.float32).to(dtype)
     return x, w1, w2, out1, out2
 
 def linear_worker(working_set):
@@ -53,16 +53,15 @@ def linear_worker(working_set):
 
 def linear_flops(working_set):
     x, w1, w2, out1, out2 = working_set
-    print(x.shape, w1.shape, w2.shape)
     return (
         (x.shape[0] * w1.shape[1] * (2 * w1.shape[0] - 1)) + \
         (x.shape[0] * w2.shape[1] * (2 * w2.shape[0] - 1))
     )
 
 def conv_working_set():
-    x = torch.randn((16, 512, 512, 512), dtype=dtype, device=device)
-    w = torch.randn((512, 512, 3, 3,), dtype=dtype, device=device)
-    out = torch.zeros_like(x)
+    x = torch.randn((4, 512, 512, 512), dtype=torch.float32, device=device).to(dtype)
+    w = torch.randn((512, 512, 3, 3,), dtype=torch.float32, device=device).to(dtype)
+    out = torch.zeros(x.shape, dtype=torch.float32, device=device).to(dtype)
     return x, w,out
 
 def conv_worker(working_set):
@@ -77,7 +76,7 @@ def conv_flops(working_set):
     return (N * H * W) * (2 * KIN * KH * KW - 1) * KOUT
 
 def test(name, init_working_set_fn, worker_fn, flops_fn):
-    n_steps = 100
+    n_steps = 5
     
     working_set = init_working_set_fn()
     synchronize()
@@ -90,22 +89,26 @@ def test(name, init_working_set_fn, worker_fn, flops_fn):
     synchronize()
     elapsed = time.time() - t
     tflops = flops_fn(working_set) / (1024 * 1024 * 1024 * 1024) * n_steps
-    print(f'[{name},{dtype},{device}] {tflops / elapsed:.2f} TFLOP/s, took {elapsed} sec')
+    print(f'[{name}, {dtype}, {device}] {tflops / elapsed:.2f} TFLOP/s, took {elapsed} sec')
 
 def main():
-    test(
-        'linear',
-        linear_working_set,
-        linear_worker,
-        linear_flops,
-    )
+    global dtype
+    for test_dtype in [torch.float32, torch.bfloat16, torch.float16]:
+        dtype = test_dtype
+        
+        test(
+            'linear',
+            linear_working_set,
+            linear_worker,
+            linear_flops,
+        )
 
-    test(
-        'conv',
-        conv_working_set,
-        conv_worker,
-        conv_flops,
-    )
+        test(
+            'conv',
+            conv_working_set,
+            conv_worker,
+            conv_flops,
+        )
 
 if __name__ == '__main__':
     main()
