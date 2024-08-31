@@ -2,7 +2,7 @@
 
 Playground of Heejun for Intel Gaudi.
 
-## Measured FLOP/s
+## Measured TFLOP/s
 
 | Device    | Linear(fp32)  | Linear(bf16)  | Linear(fp16)  | Conv(fp32)    | Conv(bf16)    | Conv(fp16)    |
 |-----------|---------------|---------------|---------------|---------------|---------------|---------------|
