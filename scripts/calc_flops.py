@@ -32,6 +32,10 @@ def synchronize():
 def mark_step():
     if device == 'hpu':
         htcore.mark_step()
+    elif device == 'cuda':
+        torch.cuda.synchronize()
+    else:
+        raise Exception()
 
 def linear_working_set():
     # batch size 8, 128k Llama 3.1 8b Sequence
@@ -49,9 +53,10 @@ def linear_worker(working_set):
 
 def linear_flops(working_set):
     x, w1, w2, out1, out2 = working_set
+    print(x.shape, w1.shape, w2.shape)
     return (
-        (x.shape[0] * w1.shape[0] * (2 * w1.shape[1] - 1)) + \
-        (x.shape[0] * w2.shape[0] * (2 * w2.shape[1] - 1))
+        (x.shape[0] * w1.shape[1] * (2 * w1.shape[0] - 1)) + \
+        (x.shape[0] * w2.shape[1] * (2 * w2.shape[0] - 1))
     )
 
 def conv_working_set():
@@ -69,7 +74,7 @@ def conv_flops(working_set):
     x, w, out = working_set
     N, C, H, W = x.shape
     KOUT, KIN, KH, KW = w.shape
-    return (N * C * H * W) * (KIN * KH * KW) * (2 * KOUT - 1)
+    return (N * H * W) * (2 * KIN * KH * KW - 1) * KOUT
 
 def test(name, init_working_set_fn, worker_fn, flops_fn):
     n_steps = 100
@@ -84,7 +89,8 @@ def test(name, init_working_set_fn, worker_fn, flops_fn):
     
     synchronize()
     elapsed = time.time() - t
-    print(f'[{name}] {flops_fn(working_set) / (1024 * 1024 * 1024 * 1024) / elapsed:.2f} TFLOP/s, took {elapsed} sec')
+    tflops = flops_fn(working_set) / (1024 * 1024 * 1024 * 1024) * n_steps
+    print(f'[{name},{dtype},{device}] {tflops / elapsed:.2f} TFLOP/s, took {elapsed} sec')
 
 def main():
     test(
