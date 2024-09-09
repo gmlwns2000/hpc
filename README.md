@@ -2,6 +2,8 @@
 
 Playground of Heejun for Intel Gaudi.
 
+Part of the project from Naver-Intel Gaudi Laboratory (2024).
+
 ## Measured TFLOP/s
 
 | Device    | Linear(fp32)  | Linear(bf16)  | Linear(fp16)  | Conv(fp32)    | Conv(bf16)    | Conv(fp16)    |
